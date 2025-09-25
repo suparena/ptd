@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/oklog/ulid/v2"
@@ -12,6 +13,7 @@ import (
 // IDGenerator generates unique identifiers for PTD entities
 type IDGenerator struct {
 	entropy *ulid.MonotonicEntropy
+	mu      sync.Mutex
 }
 
 // NewIDGenerator creates a new ID generator
@@ -23,12 +25,18 @@ func NewIDGenerator() *IDGenerator {
 
 // GenerateID generates a new PTD ID for the given entity type
 func (g *IDGenerator) GenerateID(entityType string) string {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
 	id := ulid.MustNew(ulid.Timestamp(time.Now()), g.entropy)
 	return fmt.Sprintf("ptd:%s:%s", entityType, strings.ToLower(id.String()))
 }
 
 // GenerateULID generates a raw ULID
 func (g *IDGenerator) GenerateULID() string {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
 	id := ulid.MustNew(ulid.Timestamp(time.Now()), g.entropy)
 	return id.String()
 }

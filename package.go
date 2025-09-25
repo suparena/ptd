@@ -106,6 +106,54 @@ func (p *Package) AddEntities(entityType string, entities []interface{}) error {
 
 // CreateArchive creates a ZIP archive of the package
 func (p *Package) CreateArchive(outputPath string) error {
+	// First collect all files and their hashes
+	filesToArchive := make(map[string]string) // path -> hash
+
+	// Walk directory and calculate hashes
+	err := filepath.Walk(p.tempDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Skip directories
+		if info.IsDir() {
+			return nil
+		}
+
+		// Get relative path
+		relPath, err := filepath.Rel(p.tempDir, path)
+		if err != nil {
+			return err
+		}
+
+		// Read file and calculate hash
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+
+		hasher := sha256.New()
+		hasher.Write(data)
+		hash := hex.EncodeToString(hasher.Sum(nil))
+
+		filesToArchive[relPath] = hash
+
+		// Add to manifest
+		p.Manifest.Files[relPath] = &FileEntry{
+			Path:     relPath,
+			Size:     int64(len(data)),
+			Hash:     hash,
+			Modified: info.ModTime(),
+			Type:     detectContentType(relPath),
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to walk directory: %w", err)
+	}
+
 	// Create manifest file
 	manifestPath := filepath.Join(p.tempDir, "manifest.json")
 	manifestData, err := json.MarshalIndent(p.Manifest, "", "  ")
@@ -127,8 +175,8 @@ func (p *Package) CreateArchive(outputPath string) error {
 	zipWriter := zip.NewWriter(archive)
 	defer zipWriter.Close()
 
-	// Walk directory and add files to archive
-	err = filepath.Walk(p.tempDir, func(path string, info os.FileInfo, err error) error {
+	// Add all files including the manifest
+	return filepath.Walk(p.tempDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -157,28 +205,9 @@ func (p *Package) CreateArchive(outputPath string) error {
 		}
 		defer file.Close()
 
-		// Calculate hash while copying
-		hasher := sha256.New()
-		multiWriter := io.MultiWriter(writer, hasher)
-
-		size, err := io.Copy(multiWriter, file)
-		if err != nil {
-			return err
-		}
-
-		// Update manifest with file info
-		p.Manifest.Files[relPath] = &FileEntry{
-			Path:     relPath,
-			Size:     size,
-			Hash:     hex.EncodeToString(hasher.Sum(nil)),
-			Modified: info.ModTime(),
-			Type:     detectContentType(relPath),
-		}
-
-		return nil
+		_, err = io.Copy(writer, file)
+		return err
 	})
-
-	return err
 }
 
 // OpenPackage opens and validates a PTD package
