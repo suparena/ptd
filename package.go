@@ -50,10 +50,19 @@ type EntityCount struct {
 
 // NewPackage creates a new PTD package
 func NewPackage(description string) *Package {
+	// Create temp directory for package contents
+	tempDir, err := os.MkdirTemp("", "ptd-package-*")
+	if err != nil {
+		// Fall back to current directory if temp creation fails
+		tempDir = filepath.Join(".", fmt.Sprintf("ptd-package-%s", GenerateULID()))
+		os.MkdirAll(tempDir, 0755)
+	}
+
 	return &Package{
 		ID:      GenerateULID(),
 		Created: time.Now(),
 		Version: "1.0.0",
+		tempDir: tempDir,
 		Manifest: &Manifest{
 			Version:     "1.0.0",
 			Created:     time.Now(),
@@ -101,6 +110,14 @@ func (p *Package) AddEntities(entityType string, entities []interface{}) error {
 		Count: len(entities),
 	}
 
+	return nil
+}
+
+// Cleanup removes the temporary directory
+func (p *Package) Cleanup() error {
+	if p.tempDir != "" && p.tempDir != "." {
+		return os.RemoveAll(p.tempDir)
+	}
 	return nil
 }
 
