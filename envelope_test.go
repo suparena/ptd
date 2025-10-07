@@ -8,9 +8,9 @@ import (
 
 func TestEnvelope_Validate(t *testing.T) {
 	tests := []struct {
-		name    string
+		name     string
 		envelope Envelope[Tournament]
-		wantErr error
+		wantErr  error
 	}{
 		{
 			name: "valid envelope",

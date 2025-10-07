@@ -24,8 +24,8 @@ type Tournament struct {
 type Event struct {
 	TournamentID string    `json:"tournament_id"`
 	Name         string    `json:"name"`
-	EventCode    string    `json:"event_code"` // e.g., "MS", "WD", "XD"
-	EventType    string    `json:"event_type"` // singles, doubles, team
+	EventCode    string    `json:"event_code"`       // e.g., "MS", "WD", "XD"
+	EventType    string    `json:"event_type"`       // singles, doubles, team
 	Gender       string    `json:"gender,omitempty"` // male, female, mixed
 	AgeGroup     *AgeGroup `json:"age_group,omitempty"`
 	Format       string    `json:"format,omitempty"` // Can override tournament format
@@ -38,20 +38,20 @@ type Event struct {
 
 // Match represents a match in a tournament
 type Match struct {
-	EventID      string       `json:"event_id"`
-	RoundID      string       `json:"round_id,omitempty"`
-	BracketID    string       `json:"bracket_id,omitempty"`
-	MatchNumber  string       `json:"match_number"`
-	ScheduledAt  *time.Time   `json:"scheduled_at,omitempty"`
-	Court        string       `json:"court,omitempty"`
-	Status       string       `json:"status"` // scheduled, in_progress, completed, cancelled
-	HomeEntry    *EntryRef    `json:"home_entry,omitempty"`
-	AwayEntry    *EntryRef    `json:"away_entry,omitempty"`
-	Winner       string       `json:"winner,omitempty"` // entry_id of winner
-	Score        *Score       `json:"score,omitempty"`
-	Officials    []Official   `json:"officials,omitempty"`
-	StreamingURL string       `json:"streaming_url,omitempty"`
-	Notes        string       `json:"notes,omitempty"`
+	EventID      string     `json:"event_id"`
+	RoundID      string     `json:"round_id,omitempty"`
+	BracketID    string     `json:"bracket_id,omitempty"`
+	MatchNumber  string     `json:"match_number"`
+	ScheduledAt  *time.Time `json:"scheduled_at,omitempty"`
+	Court        string     `json:"court,omitempty"`
+	Status       string     `json:"status"` // scheduled, in_progress, completed, cancelled
+	HomeEntry    *EntryRef  `json:"home_entry,omitempty"`
+	AwayEntry    *EntryRef  `json:"away_entry,omitempty"`
+	Winner       string     `json:"winner,omitempty"` // entry_id of winner
+	Score        *Score     `json:"score,omitempty"`
+	Officials    []Official `json:"officials,omitempty"`
+	StreamingURL string     `json:"streaming_url,omitempty"`
+	Notes        string     `json:"notes,omitempty"`
 }
 
 // Entry represents a participant entry in an event
@@ -92,11 +92,11 @@ type Score struct {
 
 // SetScore represents score for a single set/game
 type SetScore struct {
-	SetNumber  int    `json:"set_number"`
-	HomeScore  int    `json:"home_score"`
-	AwayScore  int    `json:"away_score"`
-	Tiebreak   bool   `json:"tiebreak,omitempty"`
-	Duration   string `json:"duration,omitempty"`
+	SetNumber int    `json:"set_number"`
+	HomeScore int    `json:"home_score"`
+	AwayScore int    `json:"away_score"`
+	Tiebreak  bool   `json:"tiebreak,omitempty"`
+	Duration  string `json:"duration,omitempty"`
 }
 
 // Supporting types
@@ -124,10 +124,10 @@ type Organizer struct {
 
 // AgeGroup represents age category
 type AgeGroup struct {
-	Name     string `json:"name"`     // e.g., "Under 19"
-	Code     string `json:"code"`     // e.g., "U19"
-	MinAge   int    `json:"min_age,omitempty"`
-	MaxAge   int    `json:"max_age,omitempty"`
+	Name       string    `json:"name"` // e.g., "Under 19"
+	Code       string    `json:"code"` // e.g., "U19"
+	MinAge     int       `json:"min_age,omitempty"`
+	MaxAge     int       `json:"max_age,omitempty"`
 	CutoffDate time.Time `json:"cutoff_date,omitempty"`
 }
 
@@ -157,8 +157,8 @@ type Money struct {
 
 // Rating represents player rating
 type Rating struct {
-	Value    int       `json:"value"`
-	System   string    `json:"system"` // e.g., "ITTF", "USATT", "ELO"
+	Value     int       `json:"value"`
+	System    string    `json:"system"` // e.g., "ITTF", "USATT", "ELO"
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
 }
 
@@ -173,7 +173,7 @@ type Team struct {
 
 // Registration represents entry registration details
 type Registration struct {
-	RegisteredAt time.Time `json:"registered_at"`
+	RegisteredAt time.Time  `json:"registered_at"`
 	ConfirmedAt  *time.Time `json:"confirmed_at,omitempty"`
 	PaidAt       *time.Time `json:"paid_at,omitempty"`
 	CheckedInAt  *time.Time `json:"checked_in_at,omitempty"`

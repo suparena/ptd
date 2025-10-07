@@ -23,26 +23,26 @@ type Meta struct {
 	Source    string    `json:"source"`     // Source system (e.g., "icc:prod-us-west")
 
 	// Optional metadata fields
-	Tags       []string               `json:"tags,omitempty"`        // User-defined tags
-	Extensions map[string]interface{} `json:"extensions,omitempty"`  // Vendor-specific extensions
-	Signature  *Signature             `json:"signature,omitempty"`   // Digital signature
-	Provenance *Provenance            `json:"provenance,omitempty"`  // Data lineage
+	Tags       []string               `json:"tags,omitempty"`       // User-defined tags
+	Extensions map[string]interface{} `json:"extensions,omitempty"` // Vendor-specific extensions
+	Signature  *Signature             `json:"signature,omitempty"`  // Digital signature
+	Provenance *Provenance            `json:"provenance,omitempty"` // Data lineage
 }
 
 // Signature contains digital signature information
 type Signature struct {
-	Algorithm   string    `json:"algorithm"`    // Signature algorithm (e.g., "ed25519")
+	Algorithm   string    `json:"algorithm"`     // Signature algorithm (e.g., "ed25519")
 	PublicKeyID string    `json:"public_key_id"` // ID of the signing key
-	Signature   string    `json:"signature"`    // Base64-encoded signature
-	SignedAt    time.Time `json:"signed_at"`    // When the signature was created
-	SignedBy    string    `json:"signed_by"`    // Identity of signer
+	Signature   string    `json:"signature"`     // Base64-encoded signature
+	SignedAt    time.Time `json:"signed_at"`     // When the signature was created
+	SignedBy    string    `json:"signed_by"`     // Identity of signer
 }
 
 // Provenance tracks the origin and history of the data
 type Provenance struct {
-	OriginalSource string       `json:"original_source"` // Original data source
-	ImportedFrom   string       `json:"imported_from,omitempty"` // If imported from another PTD
-	ImportedAt     *time.Time   `json:"imported_at,omitempty"`
+	OriginalSource  string      `json:"original_source"`         // Original data source
+	ImportedFrom    string      `json:"imported_from,omitempty"` // If imported from another PTD
+	ImportedAt      *time.Time  `json:"imported_at,omitempty"`
 	Transformations []Transform `json:"transformations,omitempty"` // Data transformations applied
 }
 

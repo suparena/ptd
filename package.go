@@ -2,7 +2,9 @@ package ptd
 
 import (
 	"archive/zip"
+	"crypto/ed25519"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -15,31 +17,42 @@ import (
 
 // Package represents a PTD package containing tournament data
 type Package struct {
-	ID         string    `json:"id"`
-	Created    time.Time `json:"created"`
-	Version    string    `json:"version"`
-	Manifest   *Manifest `json:"-"`
-	tempDir    string
+	ID       string    `json:"id"`
+	Created  time.Time `json:"created"`
+	Version  string    `json:"version"`
+	Manifest *Manifest `json:"-"`
+	tempDir  string
 }
 
 // Manifest describes the contents of a PTD package
 type Manifest struct {
-	Version     string                  `json:"version"`      // PTD version (e.g., "1.0.0")
-	Created     time.Time               `json:"created"`      // Package creation time
-	Creator     string                  `json:"creator"`      // System that created package
-	Description string                  `json:"description"`  // Human-readable description
-	Files       map[string]*FileEntry   `json:"files"`        // All files in package
-	Entities    map[string]EntityCount  `json:"entities"`     // Count of each entity type
-	Signature   *Signature              `json:"signature,omitempty"` // Package signature
+	Version     string                 `json:"version"`             // PTD version (e.g., "1.0.0")
+	Created     time.Time              `json:"created"`             // Package creation time
+	Creator     string                 `json:"creator"`             // System that created package
+	Description string                 `json:"description"`         // Human-readable description
+	Files       map[string]*FileEntry  `json:"files"`               // All files in package
+	Entities    map[string]EntityCount `json:"entities"`            // Count of each entity type
+	Signature   *Signature             `json:"signature,omitempty"` // Package signature
+}
+
+// CanonicalJSON returns the canonical JSON representation of manifest for signing
+func (m *Manifest) CanonicalJSON() ([]byte, error) {
+	// Create a copy without signature and files (files are archive metadata, not package content)
+	temp := *m
+	temp.Signature = nil
+	temp.Files = nil // Exclude files from signature - they're archive metadata
+
+	// Use deterministic JSON encoding
+	return json.Marshal(temp)
 }
 
 // FileEntry describes a file in the package
 type FileEntry struct {
-	Path     string    `json:"path"`      // Relative path in package
-	Size     int64     `json:"size"`      // File size in bytes
-	Hash     string    `json:"hash"`      // SHA-256 hash
-	Modified time.Time `json:"modified"`  // Last modification time
-	Type     string    `json:"type"`      // MIME type or content type
+	Path     string    `json:"path"`     // Relative path in package
+	Size     int64     `json:"size"`     // File size in bytes
+	Hash     string    `json:"hash"`     // SHA-256 hash
+	Modified time.Time `json:"modified"` // Last modification time
+	Type     string    `json:"type"`     // MIME type or content type
 }
 
 // EntityCount tracks the number of entities by type
@@ -317,4 +330,70 @@ func detectContentType(path string) string {
 	default:
 		return "application/octet-stream"
 	}
+}
+
+// SignPackage signs the package manifest with the given signer
+func (p *Package) SignPackage(signer *Signer) error {
+	if p.Manifest == nil {
+		return fmt.Errorf("manifest is nil")
+	}
+
+	// Get canonical JSON of manifest (without signature)
+	canonical, err := p.Manifest.CanonicalJSON()
+	if err != nil {
+		return fmt.Errorf("failed to get canonical JSON: %w", err)
+	}
+
+	// Sign the canonical JSON
+	signature := ed25519.Sign(signer.privateKey, canonical)
+
+	// Encode signature as base64
+	signatureB64 := base64.StdEncoding.EncodeToString(signature)
+
+	// Create signature object
+	p.Manifest.Signature = &Signature{
+		Algorithm:   "ed25519",
+		PublicKeyID: signer.publicKeyID,
+		Signature:   signatureB64,
+		SignedAt:    time.Now(),
+		SignedBy:    signer.signedBy,
+	}
+
+	return nil
+}
+
+// VerifyPackageSignature verifies the package signature
+func (p *Package) VerifyPackageSignature(publicKey interface{}) error {
+	if p.Manifest == nil {
+		return fmt.Errorf("manifest is nil")
+	}
+
+	if p.Manifest.Signature == nil {
+		return ErrSignatureMissing
+	}
+
+	// Get canonical JSON (without signature)
+	canonical, err := p.Manifest.CanonicalJSON()
+	if err != nil {
+		return fmt.Errorf("failed to get canonical JSON: %w", err)
+	}
+
+	// Decode signature
+	signatureBytes, err := base64.StdEncoding.DecodeString(p.Manifest.Signature.Signature)
+	if err != nil {
+		return ErrSignatureInvalid
+	}
+
+	// Type assert to Ed25519 public key
+	ed25519Key, ok := publicKey.(ed25519.PublicKey)
+	if !ok {
+		return fmt.Errorf("invalid public key type")
+	}
+
+	// Verify signature
+	if !ed25519.Verify(ed25519Key, canonical, signatureBytes) {
+		return ErrSignatureFailed
+	}
+
+	return nil
 }
